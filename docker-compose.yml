@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_papelaria
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: igor
+      POSTGRES_PASSWORD: senha123
+      POSTGRES_DB: papelaria_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
