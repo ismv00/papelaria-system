@@ -93,4 +93,67 @@ async function listarVendas(req, res) {
   }
 }
 
-module.exports = { criarVenda, listarVendas };
+async function calcularLucroTotal(req, res) {
+  try {
+    const itens = await prisma.itemVenda.findMany({
+      include: {
+        produto: true,
+      },
+    });
+
+    const lucroTotal = itens.reduce((total, item) => {
+      const lucroUnitario = item.precoUnitario - item.produto.custo;
+      const lucroItem = lucroUnitario * item.quantidade;
+      return total + lucroItem;
+    }, 0);
+
+    res.json({ lucroTotal: lucroTotal.toFixed(2) });
+  } catch (error) {
+    console.error("erro ao cacular o lucro total", error);
+    res.status(500).json({ erro: "Erro ao calcular o lucro total" });
+  }
+}
+
+async function listarVendasPorPeriodo(req, res) {
+  const { inicio, fim } = req.query;
+
+  if (!inicio || !fim) {
+    return res
+      .status(400)
+      .json({ erro: "Informe as datas de inicio e fim no formato YYYY-MM-DD" });
+  }
+
+  try {
+    const vendas = await prisma.venda.findMany({
+      where: {
+        data: {
+          gte: new Date(inicio),
+          lte: new Date(fim + "T23:59:59.999Z"),
+        },
+      },
+      include: {
+        cliente: true,
+        itens: {
+          include: {
+            produto: true,
+          },
+        },
+      },
+      orderBy: {
+        data: "desc",
+      },
+    });
+
+    res.json(vendas);
+  } catch (error) {
+    console.error("Erro ao listar vendas por periodo", error);
+    res.status(500).json({ error: "Erro ao buscar vendas por periodo" });
+  }
+}
+
+module.exports = {
+  criarVenda,
+  listarVendas,
+  calcularLucroTotal,
+  listarVendasPorPeriodo,
+};
